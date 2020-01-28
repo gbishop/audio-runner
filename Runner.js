@@ -62,8 +62,7 @@ class Runner extends Game {
     this.on("any", "start", null, () => {
       // load the sounds
       if (Object.keys(this.sounds).length === 0) {
-        ["monster", "step", "dog", "whoosh", "bump"].map(name => {
-          console.log("name", name);
+        ["monster", "step"].map(name => {
           this.sounds[name] = new mySound({
             src: [`sounds/${name}.mp3`]
           });
@@ -76,42 +75,17 @@ class Runner extends Game {
       this.playerX = 0;
       this.playerMaxLead = 20;
       this.chaserX = this.playerX - this.playerMaxLead;
-      this.dogX = this.playerX + 1000; // far away
-      this.side = 0;
       this.newTimer("chaserStep", 200);
       this.newTimer("adjustVolume", 200);
-      this.newTimer("newDog", 10000);
       this.state = "running";
     });
 
     // run one step
     this.on("step", "running", null, () => {
       this.playerX += 1;
-      if (this.playerX >= this.dogX) {
-        this.sounds["bump"].play();
-        this.playerX -= 3;
-      }
       document.querySelector("#score span").innerHTML = this.playerX;
       this.sounds["step"].play();
     });
-
-    // dodge a dog
-    this.on(
-      "dodge",
-      "running",
-      () => this.side != 0,
-      direction => {
-        if (
-          (direction == "left" && this.side > 0) ||
-          (direction == "right" && this.side < 0)
-        ) {
-          this.sounds["whoosh"].play();
-          this.dogX = this.playerX + 1000; // put it far away
-          this.sounds["dog"].stop();
-          this.side = 0;
-        }
-      }
-    );
 
     // let the chaser advance one step
     this.on(
@@ -141,20 +115,9 @@ class Runner extends Game {
       }
     );
 
-    // dog appears, avoid it
-    this.on("newDog", "running", null, () => {
-      this.dogX = this.playerX + 10;
-      this.sounds["dog"].play();
-      this.side = Math.random() > 0.5 ? -1 : 1;
-      console.log("dog", this.dogX, this.side);
-      this.sounds["dog"].stereo(this.side);
-      console.log("side", this.side);
-    });
-
     // adjust volumes
     this.on("adjustVolume", "running", null, () => {
       this.sounds["monster"].setDistance(this.playerX - this.chaserX);
-      this.sounds["dog"].setDistance(this.dogX - this.playerX);
     });
   }
 }
@@ -166,12 +129,6 @@ document.addEventListener("keydown", e => {
   switch (e.key) {
     case "ArrowUp":
       runner.handle("step");
-      break;
-    case "ArrowLeft":
-      runner.handle("dodge", "left");
-      break;
-    case "ArrowRight":
-      runner.handle("dodge", "right");
       break;
     default:
       runner.handle("any");
